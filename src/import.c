@@ -6,6 +6,8 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <assert.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include "import.h"
 
 // pthread shared data
@@ -24,23 +26,45 @@ static unsigned char **rels;
 static FILE *in_nodes;
 static FILE *in_rels;
 
-static FILE *nodestore;
-static FILE *relstore;
+static FILE *out_nodestore;
+static FILE *out_relstore;
+
+static uint64_t node_id;
+static uint64_t rel_id;
+static uint64_t prop_id;
+
+uint64_t num_nodes;
+uint64_t num_rels;
 // end pthread shared data
 
 int 
 main(int argc, char **argv) {
-  if(argc < 4) printf("usage: import <num nodes> <num rels> nodes.csv rels.csv\n");
+  if(argc < 4) printf("usage: import <num nodes> <num rels> nodes.csv rels.csv <path to db>\n");
   pthread_t node_reader_thread, node_builder_thread, node_writer_thread; 
   pthread_t rel_reader_thread, rel_builder_thread, rel_writer_thread; 
   void *exit_status;
   uint32_t i = 0;
-  uint64_t num_nodes = atoll(argv[1]);
-  uint64_t num_rels = atoll(argv[2]);
-  uint32_t node_limbs = (num_nodes / LIMB_SIZE);
+  num_nodes = atoll(argv[1]);
+  num_rels = atoll(argv[2]);
+  int32_t node_limbs = (num_nodes / LIMB_SIZE);
   uint32_t rel_limbs = (num_rels / LIMB_SIZE);
   if(num_nodes % LIMB_SIZE != 0) node_limbs++; 
   if(num_rels % LIMB_SIZE != 0) rel_limbs++; 
+  node_id = 0;
+  rel_id = 0;
+  prop_id = 0;
+
+  struct stat st = {0};
+  if(stat(argv[5], &st) == -1) {
+    mkdir(argv[5], 0700);
+  }
+
+  unsigned char *nodestore_filename = malloc(200);
+  strncpy(nodestore_filename, argv[5], 200);
+  printf("debug %s\n", nodestore_filename);
+  strncat(nodestore_filename, "/neostore.nodestore.db", 200);
+  out_nodestore = fopen(nodestore_filename, "wb");
+  free(nodestore_filename);
 
   buffers = (unsigned char **)malloc(BUFFERS * sizeof(unsigned char *));
   assert(buffers != NULL);
@@ -48,7 +72,7 @@ main(int argc, char **argv) {
   assert(buffer_lengths != NULL);
   buffer_statuses = (unsigned int*)malloc(BUFFERS * sizeof(unsigned int));
   assert(buffer_statuses != NULL);
-  for(;i<BUFFERS;i++) {
+  for(i = 0; i < BUFFERS;i++) {
     buffers[i] = malloc(BUFFER_SIZE);
     assert(buffers[i] != NULL);
     buffer_lengths[i] = 0;
@@ -70,8 +94,8 @@ main(int argc, char **argv) {
   cur_read_idx = 0;
   cur_build_idx = 0;
   process_status = 0;
-  in_nodes = fopen(argv[1], "r");
-  in_rels = fopen(argv[2], "r");
+  in_nodes = fopen(argv[3], "r");
+  in_rels = fopen(argv[4], "r");
   pthread_mutex_init(&buffer_mutex, NULL);
 
   pthread_create(&node_reader_thread, NULL, &node_reader, NULL);
@@ -295,7 +319,7 @@ node_reader(void *arg) {
     // check to see if this buffer is in use before overwriting it
     // (if buffer is length isn't 0 it hasn't been consumed)
     while(buffer_length > 0) {
-      printf("node_reader: buffer length not 0, sleeping...");
+      printf("node_reader: buffer length not 0--need to wait for it to be processed, sleeping...\n");
       sleep(1);
       pthread_mutex_lock(&buffer_mutex);
       buffer_length = buffer_lengths[buffer_num];
@@ -304,16 +328,15 @@ node_reader(void *arg) {
     uint32_t to_read = BUFFER_SIZE;
     uint32_t read = 0;
     unsigned char *buff = buffers[buffer_num];
-    printf("node_reader: %0x\n", buff); 
-    assert(buff != NULL);
     while(read != to_read) {
-      uint32_t cur = fread(buff + read, to_read - read, 1, in_nodes);
-      if(cur = 0) { 
+      uint32_t cur = fread(buff + read, 1, to_read - read, in_nodes);
+      if(cur == 0) { 
         done = 1;
-        printf("node_reader: breaking, hit end\n");
+        printf("node_reader: breaking, hit end of file\n");
         break;
       }
       read += cur;
+      printf("node_reader: read %d so far.. looping\n", read);
     }
     printf("node_reader: read %d bytes from node input into buffer: %d\n", read, buffer_num);
     pthread_mutex_lock(&buffer_mutex);
@@ -321,60 +344,209 @@ node_reader(void *arg) {
     buffer_statuses[buffer_num] = DONE_READING_NODES;
     if(buffer_num == 9) cur_read_idx = 0;
     else cur_read_idx++;
-    printf("node_reader: updated buffer idx: \n", cur_read_idx);
+    printf("node_reader: updated buffer idx: %d\n", cur_read_idx);
     pthread_mutex_unlock(&buffer_mutex);
   }
   pthread_mutex_lock(&buffer_mutex);
   pthread_mutex_unlock(&buffer_mutex);
   fclose(in_nodes);
   process_status = DONE_READING_NODES;
-  printf("node_reader: done reading node file, ending node_reader\n");
+  printf("node_reader: thread ending...\n");
   return NULL;
+}
+
+void 
+create_prop(uint64_t id, unsigned char *prop, unsigned char *value) {
+
+}
+
+void 
+create_node_from_tsv(unsigned char *props, unsigned char *line) {
+  //printf("creating node [%s] from tsv... [%s]\n", props, line);
+  unsigned char *ptr = get_node_rec(node_id++);
+  set_node_inuse(ptr, 0x1);
+  set_node_first_rel(ptr, NIL);
+  set_node_first_prop(ptr, NIL);
+  unsigned char *buff = props;
+  int first_prop = 1;
+  uint64_t new_prop_id = NIL;
+  uint64_t prev_prop_id = NIL;
+  while(1) {
+    //printf("create_node_from_tsv: property loop\n");
+    unsigned char *propend = strchr(buff, '\t');
+    unsigned char *valend = strchr(line, '\t');
+    int32_t propsize = propend - buff;
+    int32_t valsize = valend - line;
+    unsigned char *prop, *val;
+    //printf("got1 %d\n", propsize);
+    if(propsize > 0) {
+      //printf("got1a\n");
+      prop = malloc(propsize + 1);
+      assert(prop != NULL);
+      //printf("got1b\n");
+    }
+    else {
+      break;
+    }
+    if(valsize > 0) {
+      //printf("got2a %d\n", valsize);
+      val = malloc(valsize + 1); 
+      assert(val != NULL);
+      //printf("got2b\n");
+    } else {
+      break;
+    }
+
+    //printf("got2c\n");
+    strncpy(prop, props, propsize);
+    //printf("got2d\n");
+    buff = propend + 1;
+    strncpy(val, line, valsize);
+    //printf("got2e\n");
+    line = valend + 1;
+    //printf("got2f\n");
+
+    prev_prop_id = new_prop_id;
+    new_prop_id = prop_id++;
+
+    create_prop(new_prop_id, prop, val);
+    //printf("got3\n");
+
+    if(first_prop) {
+      first_prop = 0;
+    //printf("got4\n");
+      set_node_first_prop(ptr, new_prop_id);
+    //printf("got5\n");
+    } else {
+      //unsigned char *prev = get_prop_rec(prev_prop_id);
+      //set_prop_next_prop(prev, new_prop_id);
+    }
+    //printf("got6\n");
+
+    free(val);
+    free(prop);
+  }
+  //printf("create_node_from_tsv: leaving...\n");
 }
 
 void *
 node_builder(void *arg) {
+  printf("node_builder: thread started...\n");
   pthread_mutex_lock(&buffer_mutex);
-  int buffer_num = cur_build_idx; 
+  int buffer_num = cur_build_idx++; 
   int buffer_status = buffer_statuses[buffer_num];
   int buffer_length = buffer_lengths[buffer_num];
   int status = process_status;
   pthread_mutex_unlock(&buffer_mutex);
-  printf("node_builder: claimed buffer: %d...\n", buffer_num);
-  
-  while(buffer_length > 0) {
-    while(buffer_status != DONE_READING_NODES) {
-      printf("node_builder: buffer status not ready to build nodes, sleeping...");
+  printf("node_builder: looking at buffer: %d...\n", buffer_num);
+  int first_run = 1;
+  while(1) {
+    while(buffer_length == 0 || buffer_status != DONE_READING_NODES) {
+      printf("node_builder: buffer status not ready to build nodes, sleeping...\n");
       sleep(1);
       pthread_mutex_lock(&buffer_mutex); 
       buffer_status = buffer_statuses[buffer_num];
+      buffer_length = buffer_lengths[buffer_num];
+      status = process_status;
       pthread_mutex_unlock(&buffer_mutex); 
+      if(status == DONE_READING_NODES && buffer_status != DONE_READING_NODES) {
+        pthread_mutex_lock(&buffer_mutex); 
+        process_status = DONE_BUILDING_NODES;
+        status = process_status;
+        pthread_mutex_unlock(&buffer_mutex); 
+        break;
+      }
     }
+    if(status == DONE_BUILDING_NODES) {
+      break;
+    }
+    
+    unsigned char *buffer = buffers[buffer_num];
+    unsigned char *line = buffer, *props;
+    //TODO need to handle carryover
+    while(buffer != buffers[buffer_num] + BUFFER_SIZE) {
+      unsigned char *endline = strchr(buffer, '\n');
+      uint32_t diff = endline - buffer;
+      if(diff > 0) line = malloc(diff + 1); 
+      else if(buffer < buffers[buffer_num] + buffer_length) {
+        create_node_from_tsv("", ""); 
+        buffer++;
+        continue;
+      } else {
+        break;
+      }
+      strncpy(line, buffer, diff);
+      buffer = endline + 1;
+      if(first_run) {
+        first_run = 0;
+        //printf("node_builder: first line: %s\n", line);
+        props = malloc(diff + 1);
+        props[diff] = 0;
+        assert(props != NULL);
+        strncpy(props, line, diff);
+        //free(line);
+        continue;
+      }
+      create_node_from_tsv(props, line);
+      free(line);
+    }
+    //free(props);
 
     pthread_mutex_lock(&buffer_mutex); 
-    buffer_num = cur_build_idx;
+    buffer_statuses[buffer_num] = DONE_BUILDING_NODES;
+    buffer_lengths[buffer_num] = 0;
+    buffer_num = cur_build_idx++;
     buffer_length = buffer_lengths[buffer_num];
+    buffer_status = buffer_statuses[buffer_num];
     pthread_mutex_unlock(&buffer_mutex); 
   }
+  printf("node_builder: thread ending...\n");
   return NULL;
 }
 
 void *
 node_writer(void *arg) {
+  printf("node_writer: thread starting...\n");
+  uint32_t limbs = num_nodes / LIMB_SIZE + (num_nodes % LIMB_SIZE == 0 ? 0 : 1);
+  uint32_t i = 0;
+  for(;i < limbs; i++) {
+    uint32_t to_write = LIMB_SIZE * NODE_SIZE;
+    if(i == limbs - 1) {
+      to_write = (num_nodes % LIMB_SIZE) * NODE_SIZE;
+    }
+    uint32_t written = 0;
+    while(written < to_write) {
+      written += fwrite(nodes[i], 1, to_write - written, out_nodestore); 
+    }
+  }
+  unsigned char *label = "NodeStore v0.A.0";
+  uint32_t to_write = 16;
+  uint32_t written = 0;
+  while(written < to_write) {
+    written += fwrite(label, 1, to_write - written, out_nodestore);
+  }
+  fclose(out_nodestore);
+  printf("node_writer: thread ending...\n");
   return NULL;
 }
 
 void *
 rel_reader(void *arg) {
+  printf("rel_reader: thread starting...\n");
+  printf("rel_reader: thread ending...\n");
   return NULL;
 }
 
 void *
 rel_builder(void *arg) {
+  printf("rel_builder: thread starting...\n");
+  printf("rel_builder: thread ending...\n");
   return NULL;
 }
 
 void *
 rel_writer(void *arg) {
+  printf("rel_writer: thread starting...\n");
+  printf("rel_writer: thread ending...\n");
   return NULL;
 }
