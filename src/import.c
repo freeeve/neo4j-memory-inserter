@@ -10,7 +10,7 @@
 #include <sys/stat.h>
 #include "import.h"
 
-// pthread shared data
+// begin pthread shared data
 static unsigned char **buffers;
 static unsigned int *buffer_lengths;
 static unsigned int *buffer_statuses;
@@ -19,15 +19,24 @@ static int cur_build_idx;
 static uint16_t process_status;
 static pthread_mutex_t buffer_mutex;
 
+// these are memory buffers for the disk files
+// using the limbs concept (arrays broken into chunks)
 static unsigned char **nodes;
 static unsigned char **rels;
-//static unsigned char **reltypes;
+static unsigned char **reltypes;
+
+// a pointer to the last relationship on the chain for each node--not stored to disk
+// optimizes for relationship insertion on nodes with big relationship lists
+static unsigned char **node_last_rel;
 
 static FILE *in_nodes;
 static FILE *in_rels;
 
 static FILE *out_nodestore;
+static FILE *out_nodestore_id;
 static FILE *out_relstore;
+static FILE *out_relstore_id;
+static FILE *out_
 
 static uint64_t node_id;
 static uint64_t rel_id;
