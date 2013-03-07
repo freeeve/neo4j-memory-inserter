@@ -482,7 +482,6 @@ node_builder(void *arg) {
         first_run = 0;
         //printf("node_builder: first line: %s\n", line);
         props = malloc(diff + 1);
-        props[diff] = 0;
         assert(props != NULL);
         strncpy(props, line, diff);
         props[diff] = '\0';
