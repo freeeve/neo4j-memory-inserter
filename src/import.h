@@ -1,6 +1,6 @@
 static const uint32_t BUFFER_SIZE = 1024*1024;
 static const uint32_t BUFFERS = 10;
-static const size_t LIMB_SIZE = 1024*1024;
+static const size_t LIMB_SIZE = 1024*1024*10;
 static const size_t NODE_SIZE = 9;
 static const size_t REL_SIZE = 33;
 static const size_t RELTYPE_SIZE = 5;
