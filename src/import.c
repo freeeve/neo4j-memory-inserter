@@ -8,9 +8,9 @@
 #include "import.h"
 
 // pthread shared data
-static unsigned char **buffer;
-static unsigned int *buffer_length;
-static unsigned int *buffer_status;
+static unsigned char **buffers;
+static unsigned int *buffer_lengths;
+static unsigned int *buffer_statuses;
 static int cur_read_idx;
 static int cur_build_idx;
 static int cur_write_idx;
@@ -33,14 +33,15 @@ main(int argc, char **argv) {
   if(argc < 4) printf("usage: import <num nodes> <num rels> nodes.csv rels.csv\n");
   pthread_t node_reader_thread, node_builder_thread, node_writer_thread; 
   pthread_t rel_reader_thread, rel_builder_thread, rel_writer_thread; 
+  void *exit_status;
   int i=BUFFERS;
-  buffer = (unsigned char **)malloc(BUFFERS * sizeof(char *));
-  buffer_length = (unsigned int*)malloc(BUFFERS * sizeof(unsigned int));
-  buffer_status = (unsigned int*)malloc(BUFFERS * sizeof(unsigned int));
+  buffers = (unsigned char **)malloc(BUFFERS * sizeof(char *));
+  buffer_lengths = (unsigned int*)malloc(BUFFERS * sizeof(unsigned int));
+  buffer_statuses = (unsigned int*)malloc(BUFFERS * sizeof(unsigned int));
   for(;i<BUFFERS;i++) {
-    buffer[i] = malloc(BUFFER_SIZE);
-    buffer_length[i] = 0;
-    buffer_status[i] = 0;
+    buffers[i] = malloc(BUFFER_SIZE);
+    buffer_lengths[i] = 0;
+    buffer_statuses[i] = 0;
   }
   cur_read_idx = 0;
   cur_build_idx = 0;
@@ -139,7 +140,7 @@ get_rel_first_node(unsigned char *ptr) {
 
 void
 set_rel_first_node(unsigned char *ptr, uint64_t id) {
-  ptr[0] = ptr[0] | (0x700000000 & id) >> 31;
+  ptr[0] = ptr[0] | ((id >> 31) & 0x70);
   ptr[1] = (id >> 24) & 0xFF;
   ptr[2] = (id >> 16) & 0xFF;
   ptr[3] = (id >> 8) & 0xFF;
@@ -152,9 +153,8 @@ get_rel_second_node(unsigned char *ptr) {
 }
 
 unsigned char *
-get_reltype_rec(uint_64 id) {
-  unsigned int limb = id / LIMB_SIZE;
-  return reltype[id / LIMB_SIZE] + ((id % LIMB_SIZE) * RELTYPE_SIZE);
+get_reltype_rec(uint64_t id) {
+  return reltypes[id / LIMB_SIZE] + ((id % LIMB_SIZE) * RELTYPE_SIZE);
 }
 
 void *
@@ -163,10 +163,9 @@ node_reader(void *arg) {
   // loop until entire file read
   while(!feof(in_nodes)) {
     printf("attempting to claim buffer...\n");
-    int buffer_num = -1;
     pthread_mutex_lock(&buffer_mutex);
-    buffer_num = cur_read_idx; 
-    buffer_length = buffer_length[buffer_num];
+    int buffer_num = cur_read_idx; 
+    int buffer_length = buffer_lengths[buffer_num];
     pthread_mutex_unlock(&buffer_mutex);
     printf("claimed buffer: %d...\n", buffer_num);
     // check to see if this buffer is in use before overwriting it
@@ -175,19 +174,19 @@ node_reader(void *arg) {
       printf("buffer length not 0, sleeping...");
       sleep(1);
       pthread_mutex_lock(&buffer_mutex);
-      buffer_length = buffer_length[buffer_num];
+      buffer_length = buffer_lengths[buffer_num];
       pthread_mutex_unlock(&buffer_mutex);
     }
     size_t to_read = BUFFER_SIZE;
-    size_t read = 0;
-    unsigned char *buff = buffer[buffer_num];
+    uint32_t read = 0;
+    unsigned char *buff = buffers[buffer_num];
     while(read != to_read && !feof(in_nodes)) {
       read += fread(buff, to_read, 1, in_nodes);
     }
     printf("read %d bytes from node input into buffer: %d\n", read, buffer_num);
     pthread_mutex_lock(&buffer_mutex);
-    buffer_length[buffer_num] = read;
-    buffer_status[buffer_num] = DONE_READING_NODES;
+    buffer_lengths[buffer_num] = read;
+    buffer_statuses[buffer_num] = DONE_READING_NODES;
     if(buffer_num == 9) cur_read_idx = 0;
     else cur_read_idx++;
     printf("updated buffer idx: \n", cur_read_idx);
@@ -196,7 +195,7 @@ node_reader(void *arg) {
   pthread_mutex_lock(&buffer_mutex);
   pthread_mutex_unlock(&buffer_mutex);
   fclose(in_nodes);
-  status = DONE_READING_NODES;
+  process_status = DONE_READING_NODES;
   printf("done reading node file, ending node_reader\n");
   return NULL;
 }
@@ -205,8 +204,8 @@ void *
 node_builder(void *arg) {
   pthread_mutex_lock(&buffer_mutex);
   int buffer_num = cur_build_idx; 
-  int buffer_status = buffer_status[buffer_num];
-  int buffer_length = buffer_length[buffer_num];
+  int buffer_status = buffer_statuses[buffer_num];
+  int buffer_length = buffer_lengths[buffer_num];
   int status = process_status;
   pthread_mutex_unlock(&buffer_mutex);
   printf("claimed buffer: %d...\n", buffer_num);
@@ -218,7 +217,7 @@ node_builder(void *arg) {
 
     pthread_mutex_lock(&buffer_mutex); 
     buffer_num = cur_build_idx;
-    buffer_length = buffer_length[buffer_num];
+    buffer_length = buffer_lengths[buffer_num];
     pthread_mutex_unlock(&buffer_mutex); 
   }
 }
