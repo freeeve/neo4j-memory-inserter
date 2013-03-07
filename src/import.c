@@ -378,50 +378,36 @@ create_node_from_tsv(unsigned char *props, unsigned char *line) {
     int32_t propsize = propend - buff;
     int32_t valsize = valend - line;
     unsigned char *prop, *val;
-    //printf("got1 %d\n", propsize);
     if(propsize > 0) {
-      //printf("got1a\n");
       prop = malloc(propsize + 1);
       assert(prop != NULL);
-      //printf("got1b\n");
-    }
-    else {
+    } else {
       break;
     }
     if(valsize > 0) {
-      //printf("got2a %d\n", valsize);
       val = malloc(valsize + 1); 
       assert(val != NULL);
-      //printf("got2b\n");
     } else {
       break;
     }
 
-    //printf("got2c\n");
     strncpy(prop, props, propsize);
-    //printf("got2d\n");
     buff = propend + 1;
     strncpy(val, line, valsize);
-    //printf("got2e\n");
     line = valend + 1;
-    //printf("got2f\n");
 
     prev_prop_id = new_prop_id;
     new_prop_id = prop_id++;
 
     create_prop(new_prop_id, prop, val);
-    //printf("got3\n");
 
     if(first_prop) {
       first_prop = 0;
-    //printf("got4\n");
       set_node_first_prop(ptr, new_prop_id);
-    //printf("got5\n");
     } else {
       //unsigned char *prev = get_prop_rec(prev_prop_id);
       //set_prop_next_prop(prev, new_prop_id);
     }
-    //printf("got6\n");
 
     free(val);
     free(prop);
@@ -460,12 +446,17 @@ node_builder(void *arg) {
     if(status == DONE_BUILDING_NODES) {
       break;
     }
+    printf("node_builder: waking to build nodes from buffer: %d...\n", buffer_num);
     
     unsigned char *buffer = buffers[buffer_num];
     unsigned char *line = buffer, *props;
     //TODO need to handle carryover
-    while(buffer != buffers[buffer_num] + BUFFER_SIZE) {
-      unsigned char *endline = strchr(buffer, '\n');
+    while(buffer < buffers[buffer_num] + BUFFER_SIZE) {
+      unsigned char *endline = buffer;
+      while(*endline != '\n' && endline < buffers[buffer_num] + BUFFER_SIZE) {
+        endline++;
+      }
+
       uint32_t diff = endline - buffer;
       if(diff > 0) line = malloc(diff + 1); 
       else if(buffer < buffers[buffer_num] + buffer_length) {
@@ -476,6 +467,7 @@ node_builder(void *arg) {
         break;
       }
       strncpy(line, buffer, diff);
+      line[diff] = '\0';
       buffer = endline + 1;
       if(first_run) {
         first_run = 0;
@@ -484,6 +476,7 @@ node_builder(void *arg) {
         props[diff] = 0;
         assert(props != NULL);
         strncpy(props, line, diff);
+        props[diff] = '\0';
         //free(line);
         continue;
       }
@@ -495,6 +488,7 @@ node_builder(void *arg) {
     pthread_mutex_lock(&buffer_mutex); 
     buffer_statuses[buffer_num] = DONE_BUILDING_NODES;
     buffer_lengths[buffer_num] = 0;
+    if(cur_build_idx == BUFFERS) cur_build_idx = 0;
     buffer_num = cur_build_idx++;
     buffer_length = buffer_lengths[buffer_num];
     buffer_status = buffer_statuses[buffer_num];
