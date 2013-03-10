@@ -13,7 +13,6 @@
 // begin pthread shared data
 static unsigned char **buffers;
 static unsigned int *buffer_lengths;
-static unsigned int *buffer_statuses;
 static int cur_read_idx;
 static int cur_build_idx;
 static uint16_t process_status;
@@ -36,7 +35,7 @@ static FILE *out_nodestore;
 static FILE *out_nodestore_id;
 static FILE *out_relstore;
 static FILE *out_relstore_id;
-static FILE *out_
+static FILE *out_reltypestore;
 
 static uint64_t node_id;
 static uint64_t rel_id;
@@ -44,6 +43,7 @@ static uint64_t prop_id;
 
 uint64_t num_nodes;
 uint64_t num_rels;
+char path[200];
 // end pthread shared data
 
 int 
@@ -70,7 +70,6 @@ main(int argc, char **argv) {
 
   unsigned char *nodestore_filename = malloc(200);
   strncpy(nodestore_filename, argv[5], 200);
-  printf("debug %s\n", nodestore_filename);
   strncat(nodestore_filename, "/neostore.nodestore.db", 200);
   out_nodestore = fopen(nodestore_filename, "wb");
   free(nodestore_filename);
@@ -79,13 +78,10 @@ main(int argc, char **argv) {
   assert(buffers != NULL);
   buffer_lengths = (unsigned int*)malloc(BUFFERS * sizeof(unsigned int));
   assert(buffer_lengths != NULL);
-  buffer_statuses = (unsigned int*)malloc(BUFFERS * sizeof(unsigned int));
-  assert(buffer_statuses != NULL);
   for(i = 0; i < BUFFERS;i++) {
     buffers[i] = malloc(BUFFER_SIZE);
     assert(buffers[i] != NULL);
     buffer_lengths[i] = 0;
-    buffer_statuses[i] = 0;
   }
   nodes = (unsigned char **)malloc(node_limbs * sizeof(unsigned char *));
   assert(nodes != NULL);
@@ -127,7 +123,20 @@ main(int argc, char **argv) {
   pthread_join(rel_writer_thread, &exit_status);
   //pthread_join(reltype_writer_thread, &exit_status);
 
+  // cleanup
   pthread_mutex_destroy(&buffer_mutex);
+  for(i = 0; i < BUFFERS; i++) {
+    free(buffers[i]);
+  }
+
+  for(i = 0;i < node_limbs; i++) {
+    free(nodes[i]);
+  }
+  free(nodes);
+  for(i = 0;i < rel_limbs; i++) {
+    free(rels[i]);
+  }
+  free(rels);
 }
 
 unsigned char *
@@ -334,7 +343,7 @@ node_reader(void *arg) {
       buffer_length = buffer_lengths[buffer_num];
       pthread_mutex_unlock(&buffer_mutex);
     }
-    uint32_t to_read = BUFFER_SIZE;
+    uint32_t to_read = BUFFER_SIZE-1000;
     uint32_t read = 0;
     unsigned char *buff = buffers[buffer_num];
     while(read != to_read) {
@@ -350,7 +359,6 @@ node_reader(void *arg) {
     printf("node_reader: read %d bytes from node input into buffer: %d\n", read, buffer_num);
     pthread_mutex_lock(&buffer_mutex);
     buffer_lengths[buffer_num] = read;
-    buffer_statuses[buffer_num] = DONE_READING_NODES;
     if(buffer_num == 9) cur_read_idx = 0;
     else cur_read_idx++;
     printf("node_reader: updated buffer idx: %d\n", cur_read_idx);
@@ -429,28 +437,22 @@ node_builder(void *arg) {
   printf("node_builder: thread started...\n");
   pthread_mutex_lock(&buffer_mutex);
   int buffer_num = cur_build_idx++; 
-  int buffer_status = buffer_statuses[buffer_num];
   int buffer_length = buffer_lengths[buffer_num];
   int status = process_status;
   pthread_mutex_unlock(&buffer_mutex);
   printf("node_builder: looking at buffer: %d...\n", buffer_num);
   int first_run = 1;
   while(1) {
-    while(buffer_length == 0 || buffer_status != DONE_READING_NODES) {
+    while(buffer_length == 0 && status != DONE_BUILDING_NODES) {
       printf("node_builder: buffer status not ready to build nodes, sleeping...\n");
       sleep(1);
       pthread_mutex_lock(&buffer_mutex); 
-      buffer_status = buffer_statuses[buffer_num];
       buffer_length = buffer_lengths[buffer_num];
       status = process_status;
-      pthread_mutex_unlock(&buffer_mutex); 
-      if(status == DONE_READING_NODES && buffer_status != DONE_READING_NODES) {
-        pthread_mutex_lock(&buffer_mutex); 
-        process_status = DONE_BUILDING_NODES;
-        status = process_status;
-        pthread_mutex_unlock(&buffer_mutex); 
-        break;
+      if(status == DONE_READING_NODES && cur_build_idx == cur_read_idx) {
+        status = DONE_BUILDING_NODES;
       }
+      pthread_mutex_unlock(&buffer_mutex); 
     }
     if(status == DONE_BUILDING_NODES) {
       break;
@@ -494,12 +496,10 @@ node_builder(void *arg) {
     //free(props);
 
     pthread_mutex_lock(&buffer_mutex); 
-    buffer_statuses[buffer_num] = DONE_BUILDING_NODES;
     buffer_lengths[buffer_num] = 0;
     if(cur_build_idx == BUFFERS) cur_build_idx = 0;
     buffer_num = cur_build_idx++;
     buffer_length = buffer_lengths[buffer_num];
-    buffer_status = buffer_statuses[buffer_num];
     pthread_mutex_unlock(&buffer_mutex); 
   }
   printf("node_builder: thread ending...\n");

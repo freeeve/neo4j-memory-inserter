@@ -5,6 +5,7 @@ static const size_t LIMB_SIZE = 1024*1024;
 static const size_t NODE_SIZE = 9;
 static const size_t REL_SIZE = 33;
 static const size_t RELTYPE_SIZE = 5;
+
 static const uint16_t DONE_READING_NODES = 1;
 static const uint16_t DONE_BUILDING_NODES = 2;
 static const uint16_t DONE_WRITING_NODES = 3;
@@ -121,3 +122,5 @@ get_reltype_idx(unsigned char *ptr);
 void
 set_reltype_idx(unsigned char *ptr, uint64_t id);
 
+void
+printlog(const char *fmt, ...);
