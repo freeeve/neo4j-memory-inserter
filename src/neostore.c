@@ -21,7 +21,7 @@ get_node_first_rel(unsigned char *ptr) {
 
 void
 set_node_first_rel(unsigned char *ptr, uint64_t id) {
-  ptr[0] = ptr[0] | ((id >> 31) & 0xE);
+  ptr[0] = (ptr[0] & 0xF1) | ((id >> 31) & 0xE);
   ptr[1] = (id >> 24) & 0xFF;  
   ptr[2] = (id >> 16) & 0xFF;
   ptr[3] = (id >> 8)  & 0xFF;
@@ -40,7 +40,7 @@ get_node_first_prop(unsigned char *ptr) {
 
 void
 set_node_first_prop(unsigned char *ptr, uint64_t id) {
-  ptr[0] = ptr[0] | ((id >> 28) & 0xF0);
+  ptr[0] = (ptr[0] & 0xF) | ((id >> 28) & 0xF0);
   ptr[5] = (id >> 24) & 0xFF;  
   ptr[6] = (id >> 16) & 0xFF;
   ptr[7] = (id >> 8)  & 0xFF;
@@ -80,7 +80,7 @@ get_rel_first_node(unsigned char *ptr) {
 
 void
 set_rel_first_node(unsigned char *ptr, uint64_t id) {
-  ptr[0] = ptr[0] | ((id >> 31) & 0xE);
+  ptr[0] = (ptr[0] & 0xF1) | ((id >> 31) & 0xE);
   ptr[1] = (id >> 24) & 0xFF;
   ptr[2] = (id >> 16) & 0xFF;
   ptr[3] = (id >> 8)  & 0xFF;
