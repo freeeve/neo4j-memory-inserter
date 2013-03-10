@@ -1,4 +1,4 @@
-TESTS = check_import
-check_PROGRAMS = check_import
-check_import_SOURCES = check_import.c
-AM_CFLAGS = -lcheck ../import
+TESTS = check_neostore
+check_PROGRAMS = check_neostore
+check_neostore_SOURCES = check_neostore.c ../src/neostore.c
+AM_CFLAGS = -lcheck

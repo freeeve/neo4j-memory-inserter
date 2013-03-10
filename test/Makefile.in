@@ -47,8 +47,8 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-TESTS = check_import$(EXEEXT)
-check_PROGRAMS = check_import$(EXEEXT)
+TESTS = check_neostore$(EXEEXT)
+check_PROGRAMS = check_neostore$(EXEEXT)
 subdir = test
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/depcomp
@@ -60,9 +60,10 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am_check_import_OBJECTS = check_import.$(OBJEXT)
-check_import_OBJECTS = $(am_check_import_OBJECTS)
-check_import_LDADD = $(LDADD)
+am_check_neostore_OBJECTS = check_neostore.$(OBJEXT) \
+	neostore.$(OBJEXT)
+check_neostore_OBJECTS = $(am_check_neostore_OBJECTS)
+check_neostore_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -71,8 +72,8 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(check_import_SOURCES)
-DIST_SOURCES = $(check_import_SOURCES)
+SOURCES = $(check_neostore_SOURCES)
+DIST_SOURCES = $(check_neostore_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -131,6 +132,7 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PKG_CONFIG = @PKG_CONFIG@
 PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
 PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
+RANLIB = @RANLIB@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
@@ -177,8 +179,8 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-check_import_SOURCES = check_import.c
-AM_CFLAGS = -lcheck ../import
+check_neostore_SOURCES = check_neostore.c ../src/neostore.c
+AM_CFLAGS = -lcheck
 all: all-am
 
 .SUFFIXES:
@@ -216,9 +218,9 @@ $(am__aclocal_m4_deps):
 
 clean-checkPROGRAMS:
 	-test -z "$(check_PROGRAMS)" || rm -f $(check_PROGRAMS)
-check_import$(EXEEXT): $(check_import_OBJECTS) $(check_import_DEPENDENCIES) $(EXTRA_check_import_DEPENDENCIES) 
-	@rm -f check_import$(EXEEXT)
-	$(LINK) $(check_import_OBJECTS) $(check_import_LDADD) $(LIBS)
+check_neostore$(EXEEXT): $(check_neostore_OBJECTS) $(check_neostore_DEPENDENCIES) $(EXTRA_check_neostore_DEPENDENCIES) 
+	@rm -f check_neostore$(EXEEXT)
+	$(LINK) $(check_neostore_OBJECTS) $(check_neostore_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -226,7 +228,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_import.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_neostore.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/neostore.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -241,6 +244,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+
+neostore.o: ../src/neostore.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT neostore.o -MD -MP -MF $(DEPDIR)/neostore.Tpo -c -o neostore.o `test -f '../src/neostore.c' || echo '$(srcdir)/'`../src/neostore.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/neostore.Tpo $(DEPDIR)/neostore.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../src/neostore.c' object='neostore.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o neostore.o `test -f '../src/neostore.c' || echo '$(srcdir)/'`../src/neostore.c
+
+neostore.obj: ../src/neostore.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT neostore.obj -MD -MP -MF $(DEPDIR)/neostore.Tpo -c -o neostore.obj `if test -f '../src/neostore.c'; then $(CYGPATH_W) '../src/neostore.c'; else $(CYGPATH_W) '$(srcdir)/../src/neostore.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/neostore.Tpo $(DEPDIR)/neostore.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../src/neostore.c' object='neostore.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o neostore.obj `if test -f '../src/neostore.c'; then $(CYGPATH_W) '../src/neostore.c'; else $(CYGPATH_W) '$(srcdir)/../src/neostore.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

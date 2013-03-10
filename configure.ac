@@ -8,6 +8,7 @@ AC_CONFIG_HEADER([config.h])
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
+AC_PROG_RANLIB
 
 # Checks for libraries.
 AC_CHECK_LIB([pthread],[pthread])
