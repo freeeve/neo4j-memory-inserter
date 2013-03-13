@@ -128,6 +128,11 @@ main(int argc, char **argv) {
   pthread_join(rel_reader_thread, &exit_status);
   pthread_join(rel_builder_thread, &exit_status);
 
+  for(i = 0; i < BUFFERS;i++) {
+    free(buffers[i]);
+  }
+  free(buffers);
+  
   pthread_create(&node_writer_thread, NULL, &node_writer, NULL);
   pthread_create(&rel_writer_thread, NULL, &rel_writer, NULL);
   //pthread_create(&reltype_writer_thread, NULL, &reltype_writer, NULL);
@@ -141,15 +146,6 @@ main(int argc, char **argv) {
   for(i = 0; i < BUFFERS; i++) {
     free(buffers[i]);
   }
-
-  for(i = 0;i < node_limbs; i++) {
-    free(nodes[i]);
-  }
-  free(nodes);
-  for(i = 0;i < rel_limbs; i++) {
-    free(rels[i]);
-  }
-  free(rels);
 }
 
 void *
@@ -301,7 +297,9 @@ node_writer(void *arg) {
     while(written < to_write) {
       written += fwrite(nodes[i], 1, to_write - written, out_nodestore); 
     }
+    free(nodes[i]);
   }
+  free(nodes);
   unsigned char *label = "NodeStore v0.A.0";
   uint32_t to_write = 16;
   uint32_t written = 0;
@@ -414,13 +412,6 @@ rel_builder(void *arg) {
 
       uint32_t diff = endline - buffer;
       if(diff > 0) line = malloc(diff + 1); 
-      else if(buffer < buffers[buffer_num] + buffer_length) {
-        create_rel_from_tsv("", ""); 
-        buffer++;
-        continue;
-      } else {
-        break;
-      }
       strncpy(line, buffer, diff);
       line[diff] = '\0';
       buffer = endline + 1;
@@ -464,7 +455,9 @@ rel_writer(void *arg) {
     while(written < to_write) {
       written += fwrite(rels[i], 1, to_write - written, out_relstore); 
     }
+    free(rels[i]);
   }
+  free(rels);
   unsigned char *label = "RelationshipStore v0.A.0";
   uint32_t to_write = 24;
   uint32_t written = 0;
