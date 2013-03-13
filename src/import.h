@@ -1,5 +1,5 @@
-static const uint32_t BUFFER_SIZE = 1024*1024*10;
-static const uint32_t BUFFERS = 10;
+static const uint32_t BUFFERS = 2;
+static const uint32_t BUFFER_SIZE = 1024*1024*50;
 
 static const uint16_t DONE_READING_NODES = 1;
 static const uint16_t DONE_BUILDING_NODES = 2;
