@@ -12,6 +12,9 @@ void
 create_node_from_tsv(unsigned char *props, unsigned char *line);
 
 void
+create_rel_from_tsv(unsigned char *props, unsigned char *line);
+
+void
 create_prop(uint64_t id, unsigned char *prop, unsigned char *value);
 
 // thread runners
