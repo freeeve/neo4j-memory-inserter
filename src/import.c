@@ -141,11 +141,7 @@ main(int argc, char **argv) {
   pthread_join(rel_writer_thread, &exit_status);
   //pthread_join(reltype_writer_thread, &exit_status);
 
-  // cleanup
   pthread_mutex_destroy(&buffer_mutex);
-  for(i = 0; i < BUFFERS; i++) {
-    free(buffers[i]);
-  }
 }
 
 void *
@@ -297,6 +293,7 @@ node_writer(void *arg) {
     while(written < to_write) {
       written += fwrite(nodes[i], 1, to_write - written, out_nodestore); 
     }
+    // if we're into swap, freeing here is a good idea
     free(nodes[i]);
   }
   free(nodes);
@@ -347,6 +344,7 @@ rel_reader(void *arg) {
       read += cur;
       printf("rel_reader: read %d so far.. looping\n", read);
     }
+    // a bit of a hack to line things up with the end of the line
     if(!done) {
       unsigned char *ptr = buff + read - 1;
       while(*ptr != '\n') ptr--;
@@ -403,7 +401,6 @@ rel_builder(void *arg) {
     
     unsigned char *buffer = buffers[buffer_num];
     unsigned char *line = buffer, *props;
-    //TODO need to handle carryover
     while(buffer < buffers[buffer_num] + buffer_length) {
       unsigned char *endline = buffer;
       while(*endline != '\n' && endline < buffers[buffer_num] + buffer_length) {
@@ -455,6 +452,7 @@ rel_writer(void *arg) {
     while(written < to_write) {
       written += fwrite(rels[i], 1, to_write - written, out_relstore); 
     }
+    // if we're into swap, freeing here is a good idea
     free(rels[i]);
   }
   free(rels);
