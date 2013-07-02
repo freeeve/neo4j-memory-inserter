@@ -173,7 +173,7 @@ node_reader(void *arg) {
       buffer_length = buffer_lengths[buffer_num];
       pthread_mutex_unlock(&buffer_mutex);
     }
-    uint32_t to_read = BUFFER_SIZE;
+    uint32_t to_read = BUFFER_SIZE-1000;
     uint32_t read = 0;
     unsigned char *buff = buffers[buffer_num];
     while(read != to_read) {
@@ -186,25 +186,17 @@ node_reader(void *arg) {
       read += cur;
       printf("node_reader: read %d so far.. looping\n", read);
     }
-    if(!done) {
-      unsigned char *ptr = buff + read - 1;
-      while(*ptr != '\n') ptr--;
-      ptr++;
-      int diff = buff + read - ptr;
-      read -= diff;
-      fseek(in_nodes, -diff, SEEK_CUR);
-    }
     printf("node_reader: read %d bytes from node input into buffer: %d\n", read, buffer_num);
     pthread_mutex_lock(&buffer_mutex);
     buffer_lengths[buffer_num] = read;
-    if(buffer_num == BUFFERS - 1) cur_read_idx = 0;
+    if(buffer_num == 9) cur_read_idx = 0;
     else cur_read_idx++;
     printf("node_reader: updated buffer idx: %d\n", cur_read_idx);
     pthread_mutex_unlock(&buffer_mutex);
   }
   pthread_mutex_lock(&buffer_mutex);
   pthread_mutex_unlock(&buffer_mutex);
-  //fclose(in_nodes);
+  fclose(in_nodes);
   process_status = DONE_READING_NODES;
   printf("node_reader: thread ending...\n");
   return NULL;
@@ -243,9 +235,9 @@ node_builder(void *arg) {
     unsigned char *buffer = buffers[buffer_num];
     unsigned char *line = buffer, *props;
     //TODO need to handle carryover
-    while(buffer < buffers[buffer_num] + buffer_length) {
+    while(buffer < buffers[buffer_num] + BUFFER_SIZE) {
       unsigned char *endline = buffer;
-      while(*endline != '\n' && endline < buffers[buffer_num] + buffer_length) {
+      while(*endline != '\n' && endline < buffers[buffer_num] + BUFFER_SIZE) {
         endline++;
       }
 
@@ -274,6 +266,7 @@ node_builder(void *arg) {
       create_node_from_tsv(props, line);
       free(line);
     }
+    //free(props);
 
     pthread_mutex_lock(&buffer_mutex); 
     buffer_lengths[buffer_num] = 0;
@@ -282,7 +275,6 @@ node_builder(void *arg) {
     buffer_length = buffer_lengths[buffer_num];
     pthread_mutex_unlock(&buffer_mutex); 
   }
-  //free(props);
   printf("node_builder: thread ending...\n");
   return NULL;
 }
@@ -327,16 +319,17 @@ rel_reader(void *arg) {
   while(!done) {
     // check to see if this buffer is in use before overwriting it
     // (if buffer is length isn't 0 it hasn't been consumed)
-    while(buffer_length > 0) {
+    while(buffer_length > 0 || status != DONE_BUILDING_NODES) {
       printf("rel_reader: buffer status not ready to read rels, sleeping, %d %d...\n", buffer_length, status);
       sleep(1);
       pthread_mutex_lock(&buffer_mutex); 
+      buffer_num = cur_read_idx;
       buffer_length = buffer_lengths[buffer_num];
       status = process_status;
       pthread_mutex_unlock(&buffer_mutex); 
     }
     printf("rel_reader: waking to read rels into buffer: %d...\n", buffer_num);
-    uint32_t to_read = BUFFER_SIZE;
+    uint32_t to_read = BUFFER_SIZE-1000;
     uint32_t read = 0;
     unsigned char *buff = buffers[buffer_num];
     while(read != to_read) {
@@ -349,27 +342,17 @@ rel_reader(void *arg) {
       read += cur;
       printf("rel_reader: read %d so far.. looping\n", read);
     }
-    if(!done) {
-      unsigned char *ptr = buff + read - 1;
-      while(*ptr != '\n') ptr--;
-      ptr++;
-      int diff = buff + read - ptr;
-      read -= diff;
-      fseek(in_rels, -diff, SEEK_CUR);
-    }
     printf("rel_reader: read %d bytes from rel input into buffer: %d\n", read, buffer_num);
     pthread_mutex_lock(&buffer_mutex);
     buffer_lengths[buffer_num] = read;
-    if(buffer_num == BUFFERS - 1) cur_read_idx = 0;
+    if(buffer_num == 9) cur_read_idx = 0;
     else cur_read_idx++;
-    buffer_num = cur_read_idx;
-    buffer_length = buffer_lengths[buffer_num];
     printf("rel_reader: updated buffer idx: %d\n", cur_read_idx);
     pthread_mutex_unlock(&buffer_mutex);
   }
   pthread_mutex_lock(&buffer_mutex);
   pthread_mutex_unlock(&buffer_mutex);
-  //fclose(in_nodes);
+  fclose(in_nodes);
   process_status = DONE_READING_RELS;
   printf("rel_reader: thread ending...\n");
   return NULL;
@@ -406,9 +389,9 @@ rel_builder(void *arg) {
     unsigned char *buffer = buffers[buffer_num];
     unsigned char *line = buffer, *props;
     //TODO need to handle carryover
-    while(buffer < buffers[buffer_num] + buffer_length) {
+    while(buffer < buffers[buffer_num] + BUFFER_SIZE) {
       unsigned char *endline = buffer;
-      while(*endline != '\n' && endline < buffers[buffer_num] + buffer_length) {
+      while(*endline != '\n' && endline < buffers[buffer_num] + BUFFER_SIZE) {
         endline++;
       }
 
