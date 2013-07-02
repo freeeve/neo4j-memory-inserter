@@ -128,6 +128,11 @@ main(int argc, char **argv) {
   pthread_join(rel_reader_thread, &exit_status);
   pthread_join(rel_builder_thread, &exit_status);
 
+  for(i = 0; i < BUFFERS;i++) {
+    free(buffers[i]);
+  }
+  free(buffers);
+  
   pthread_create(&node_writer_thread, NULL, &node_writer, NULL);
   pthread_create(&rel_writer_thread, NULL, &rel_writer, NULL);
   //pthread_create(&reltype_writer_thread, NULL, &reltype_writer, NULL);
@@ -136,20 +141,7 @@ main(int argc, char **argv) {
   pthread_join(rel_writer_thread, &exit_status);
   //pthread_join(reltype_writer_thread, &exit_status);
 
-  // cleanup
   pthread_mutex_destroy(&buffer_mutex);
-  for(i = 0; i < BUFFERS; i++) {
-    free(buffers[i]);
-  }
-
-  for(i = 0;i < node_limbs; i++) {
-    free(nodes[i]);
-  }
-  free(nodes);
-  for(i = 0;i < rel_limbs; i++) {
-    free(rels[i]);
-  }
-  free(rels);
 }
 
 void *
@@ -293,7 +285,10 @@ node_writer(void *arg) {
     while(written < to_write) {
       written += fwrite(nodes[i], 1, to_write - written, out_nodestore); 
     }
+    // if we're into swap, freeing here is a good idea
+    free(nodes[i]);
   }
+  free(nodes);
   unsigned char *label = "NodeStore v0.A.0";
   uint32_t to_write = 16;
   uint32_t written = 0;
@@ -342,6 +337,15 @@ rel_reader(void *arg) {
       read += cur;
       printf("rel_reader: read %d so far.. looping\n", read);
     }
+    // a bit of a hack to line things up with the end of the line
+    if(!done) {
+      unsigned char *ptr = buff + read - 1;
+      while(*ptr != '\n') ptr--;
+      ptr++;
+      int diff = buff + read - ptr;
+      read -= diff;
+      fseek(in_rels, -diff, SEEK_CUR);
+    }
     printf("rel_reader: read %d bytes from rel input into buffer: %d\n", read, buffer_num);
     pthread_mutex_lock(&buffer_mutex);
     buffer_lengths[buffer_num] = read;
@@ -388,8 +392,12 @@ rel_builder(void *arg) {
     
     unsigned char *buffer = buffers[buffer_num];
     unsigned char *line = buffer, *props;
+<<<<<<< HEAD
     //TODO need to handle carryover
     while(buffer < buffers[buffer_num] + BUFFER_SIZE) {
+=======
+    while(buffer < buffers[buffer_num] + buffer_length) {
+>>>>>>> 9ad90cbd3e2378a87156e2921e1d26b6f5fcf3f4
       unsigned char *endline = buffer;
       while(*endline != '\n' && endline < buffers[buffer_num] + BUFFER_SIZE) {
         endline++;
@@ -397,13 +405,6 @@ rel_builder(void *arg) {
 
       uint32_t diff = endline - buffer;
       if(diff > 0) line = malloc(diff + 1); 
-      else if(buffer < buffers[buffer_num] + buffer_length) {
-        create_rel_from_tsv("", ""); 
-        buffer++;
-        continue;
-      } else {
-        break;
-      }
       strncpy(line, buffer, diff);
       line[diff] = '\0';
       buffer = endline + 1;
@@ -447,7 +448,10 @@ rel_writer(void *arg) {
     while(written < to_write) {
       written += fwrite(rels[i], 1, to_write - written, out_relstore); 
     }
+    // if we're into swap, freeing here is a good idea
+    free(rels[i]);
   }
+  free(rels);
   unsigned char *label = "RelationshipStore v0.A.0";
   uint32_t to_write = 24;
   uint32_t written = 0;
