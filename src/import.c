@@ -392,12 +392,7 @@ rel_builder(void *arg) {
     
     unsigned char *buffer = buffers[buffer_num];
     unsigned char *line = buffer, *props;
-<<<<<<< HEAD
-    //TODO need to handle carryover
     while(buffer < buffers[buffer_num] + BUFFER_SIZE) {
-=======
-    while(buffer < buffers[buffer_num] + buffer_length) {
->>>>>>> 9ad90cbd3e2378a87156e2921e1d26b6f5fcf3f4
       unsigned char *endline = buffer;
       while(*endline != '\n' && endline < buffers[buffer_num] + BUFFER_SIZE) {
         endline++;
