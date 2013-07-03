@@ -10,6 +10,9 @@
 #include <sys/stat.h>
 #include "import.h"
 #include "neostore.h"
+#include "nodestore.h"
+#include "relstore.h"
+#include "reltypestore.h"
 
 // begin pthread shared data
 static unsigned char **buffers;

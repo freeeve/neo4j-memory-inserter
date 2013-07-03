@@ -63,7 +63,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(includedir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_import_OBJECTS = import.$(OBJEXT) neostore.$(OBJEXT)
+am_import_OBJECTS = import.$(OBJEXT) neostore.$(OBJEXT) \
+	nodestore.$(OBJEXT) relstore.$(OBJEXT) reltypestore.$(OBJEXT)
 import_OBJECTS = $(am_import_OBJECTS)
 import_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -205,8 +206,8 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-import_SOURCES = import.c neostore.c
-include_HEADERS = import.h neostore.h
+import_SOURCES = import.c neostore.c nodestore.c relstore.c reltypestore.c
+include_HEADERS = import.h neostore.h nodestore.h relstore.h reltypestore.h
 AM_CFLAGS = -pthread
 all: all-am
 
@@ -294,6 +295,9 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/import.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/neostore.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nodestore.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/relstore.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reltypestore.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

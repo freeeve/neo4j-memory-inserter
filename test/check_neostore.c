@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include "config.h"
 #include "../src/neostore.h"
+#include "../src/nodestore.h"
+#include "../src/relstore.h"
+#include "../src/reltypestore.h"
 
 START_TEST(test_set_node_inuse)
 {

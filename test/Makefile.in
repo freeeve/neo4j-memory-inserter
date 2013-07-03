@@ -61,7 +61,8 @@ CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am_check_neostore_OBJECTS = check_neostore.$(OBJEXT) \
-	neostore.$(OBJEXT)
+	neostore.$(OBJEXT) nodestore.$(OBJEXT) relstore.$(OBJEXT) \
+	reltypestore.$(OBJEXT)
 check_neostore_OBJECTS = $(am_check_neostore_OBJECTS)
 check_neostore_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -179,7 +180,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-check_neostore_SOURCES = check_neostore.c ../src/neostore.c
+check_neostore_SOURCES = check_neostore.c ../src/neostore.c ../src/nodestore.c ../src/relstore.c ../src/reltypestore.c
 AM_CFLAGS = -lcheck
 all: all-am
 
@@ -230,6 +231,9 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_neostore.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/neostore.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nodestore.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/relstore.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reltypestore.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -258,6 +262,48 @@ neostore.obj: ../src/neostore.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../src/neostore.c' object='neostore.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o neostore.obj `if test -f '../src/neostore.c'; then $(CYGPATH_W) '../src/neostore.c'; else $(CYGPATH_W) '$(srcdir)/../src/neostore.c'; fi`
+
+nodestore.o: ../src/nodestore.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT nodestore.o -MD -MP -MF $(DEPDIR)/nodestore.Tpo -c -o nodestore.o `test -f '../src/nodestore.c' || echo '$(srcdir)/'`../src/nodestore.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/nodestore.Tpo $(DEPDIR)/nodestore.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../src/nodestore.c' object='nodestore.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o nodestore.o `test -f '../src/nodestore.c' || echo '$(srcdir)/'`../src/nodestore.c
+
+nodestore.obj: ../src/nodestore.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT nodestore.obj -MD -MP -MF $(DEPDIR)/nodestore.Tpo -c -o nodestore.obj `if test -f '../src/nodestore.c'; then $(CYGPATH_W) '../src/nodestore.c'; else $(CYGPATH_W) '$(srcdir)/../src/nodestore.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/nodestore.Tpo $(DEPDIR)/nodestore.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../src/nodestore.c' object='nodestore.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o nodestore.obj `if test -f '../src/nodestore.c'; then $(CYGPATH_W) '../src/nodestore.c'; else $(CYGPATH_W) '$(srcdir)/../src/nodestore.c'; fi`
+
+relstore.o: ../src/relstore.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT relstore.o -MD -MP -MF $(DEPDIR)/relstore.Tpo -c -o relstore.o `test -f '../src/relstore.c' || echo '$(srcdir)/'`../src/relstore.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/relstore.Tpo $(DEPDIR)/relstore.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../src/relstore.c' object='relstore.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o relstore.o `test -f '../src/relstore.c' || echo '$(srcdir)/'`../src/relstore.c
+
+relstore.obj: ../src/relstore.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT relstore.obj -MD -MP -MF $(DEPDIR)/relstore.Tpo -c -o relstore.obj `if test -f '../src/relstore.c'; then $(CYGPATH_W) '../src/relstore.c'; else $(CYGPATH_W) '$(srcdir)/../src/relstore.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/relstore.Tpo $(DEPDIR)/relstore.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../src/relstore.c' object='relstore.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o relstore.obj `if test -f '../src/relstore.c'; then $(CYGPATH_W) '../src/relstore.c'; else $(CYGPATH_W) '$(srcdir)/../src/relstore.c'; fi`
+
+reltypestore.o: ../src/reltypestore.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT reltypestore.o -MD -MP -MF $(DEPDIR)/reltypestore.Tpo -c -o reltypestore.o `test -f '../src/reltypestore.c' || echo '$(srcdir)/'`../src/reltypestore.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/reltypestore.Tpo $(DEPDIR)/reltypestore.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../src/reltypestore.c' object='reltypestore.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o reltypestore.o `test -f '../src/reltypestore.c' || echo '$(srcdir)/'`../src/reltypestore.c
+
+reltypestore.obj: ../src/reltypestore.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT reltypestore.obj -MD -MP -MF $(DEPDIR)/reltypestore.Tpo -c -o reltypestore.obj `if test -f '../src/reltypestore.c'; then $(CYGPATH_W) '../src/reltypestore.c'; else $(CYGPATH_W) '$(srcdir)/../src/reltypestore.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/reltypestore.Tpo $(DEPDIR)/reltypestore.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../src/reltypestore.c' object='reltypestore.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o reltypestore.obj `if test -f '../src/reltypestore.c'; then $(CYGPATH_W) '../src/reltypestore.c'; else $(CYGPATH_W) '$(srcdir)/../src/reltypestore.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
